@@ -149,7 +149,7 @@ def create_graphs(args):
 
     root_dir = args.root_dir
     encoding_method = args.encoding_method
-    images_root_path = os.path.join(root_dir, "data/train/Labeled")
+    images_root_path = os.path.join(root_dir, "data/Train/Labeled")
 
     for i, class_name in enumerate(class_names):
         images_folder = os.path.join(images_root_path, class_name, "image")
