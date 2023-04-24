@@ -129,6 +129,7 @@ def create_SLIC_graphs(image_folder,  flood_label, save_dir, n_segments=1000):
 
         # permuting axis for compatibility with pyg SLIC implementation
         img_slic_input = torch.from_numpy(image).permute(2, 0, 1)
+        print(img_slic_input)
         slic_graph_position_similarity = graph_transform(img_slic_input)
         slic_graph_position_similarity.y = flood_label
         visualize_SLIC_superpixels(image, img_id, slic_graph_position_similarity, slic_images_and_graphs_dir)
