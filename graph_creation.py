@@ -54,11 +54,13 @@ def visualize_SLIC_superpixels(image, img_id, slic_graph, slic_images_and_graphs
     axs.imshow(image_with_slic_boundaries)
     axs.axis("off")
     plt.savefig(os.path.join(slic_images_and_graphs_dir, img_id))
+    plt.close()
 
     fig, axs = plt.subplots(1, 1, figsize=(6, 6))
     graph_viz = to_networkx(slic_graph)
     nx.draw(graph_viz, ax=axs)
     plt.savefig(os.path.join(slic_images_and_graphs_dir, "graph_{}".format(img_id)))
+    plt.close()
 
 def create_and_save_SIFT_graphs(image_folder,  flood_label, save_dir):
     print("Creating SIFT keypoint extraction graphs")
@@ -129,7 +131,6 @@ def create_SLIC_graphs(image_folder,  flood_label, save_dir, n_segments=1000):
 
         # permuting axis for compatibility with pyg SLIC implementation
         img_slic_input = torch.from_numpy(image).permute(2, 0, 1)
-        print(img_slic_input)
         slic_graph_position_similarity = graph_transform(img_slic_input)
         slic_graph_position_similarity.y = flood_label
         visualize_SLIC_superpixels(image, img_id, slic_graph_position_similarity, slic_images_and_graphs_dir)
