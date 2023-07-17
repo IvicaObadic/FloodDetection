@@ -162,7 +162,7 @@ def create_SLIC_graphs(image_folder,  flood_label, save_dir, n_segments=1000):
 
 
 def create_SAG_graphs(image_folder, flood_label, save_dir):
-
+    torch.cuda.empty_cache()
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
