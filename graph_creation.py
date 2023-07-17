@@ -20,6 +20,7 @@ from util import show_anns
 import networkx as nx
 
 from segment_anything import SamAutomaticMaskGenerator, sam_model_registry
+from segment_anything.utils import amg
 
 
 
@@ -182,7 +183,7 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         plt.imshow(image)
         show_anns(masks)
         plt.axis('off')
-        plt.savefig(os.path.join(save_dir, "{}_segments.png".format(i)))
+        plt.savefig(os.path.join(save_dir, "{}_segments.png".format(img_id)))
         plt.close()
 
 
