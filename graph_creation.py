@@ -2,7 +2,7 @@ import argparse
 import os
 import cv2 as cv
 import matplotlib.pyplot as plt
-
+import json
 
 from sklearn.neighbors import kneighbors_graph
 
@@ -176,11 +176,16 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         image = cv.imread(image_path)
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         masks = mask_generator.generate(image)
+
+        masks_json_file = os.path.join(save_dir, img_id.split(".")[0] + ".json")
+        with open(masks_json_file, "w") as f:
+            json.dump(masks, f)
+
         plt.figure(figsize=(20, 20))
         plt.imshow(image)
         show_anns(masks)
         plt.axis('off')
-        plt.savefig(os.path.join(save_dir, "{}_segments.png".format(img_id)))
+        plt.savefig(os.path.join(save_dir, img_id))
         plt.close()
 
 
