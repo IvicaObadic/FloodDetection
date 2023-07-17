@@ -86,18 +86,17 @@ class ModelTrainer():
         gt, predicted = self.test(self.epochs, self.best_model)
         print("F1 score: {}".format(f1_score(gt, predicted)))
 
-        self.save_results()
         conf_matr = confusion_matrix(gt, predicted)
-        disp = ConfusionMatrixDisplay(confusion_matrix=conf_matr, display_labels=["Non Flooded", "Flooded"])
-        disp.plot()
-        plt.show()
+        self.save_results(conf_matr)
 
-    def save_results(self):
+
+    def save_results(self, conf_matrix):
         training_stats = {"Epoch": [i for i in range(1, self.epochs+1)],
                           "train_loss": self.epoch_loss,
                           "test_f1_score": self.test_f1_score}
         training_stats = pd.DataFrame(training_stats)
         training_stats.to_csv(os.path.join(self.model_output_dir, "training_stats.csv"))
+        pd.DataFrame(conf_matrix).to_csv(os.path.join(self.model_output_dir, "conf_matr.csv"))
         torch.save({'epoch': self.epochs,
                     'model_state_dict': self.model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),
