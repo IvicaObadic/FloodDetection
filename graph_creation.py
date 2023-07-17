@@ -176,7 +176,7 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         image = cv.imread(image_path)
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         masks = mask_generator.generate(image)
-        print(masks)
+        #print(masks)
         masks_json_file = os.path.join(save_dir, img_id.split(".")[0] + ".json")
         # with open(masks_json_file, "w") as f:
         #     json.dump(masks, f)
