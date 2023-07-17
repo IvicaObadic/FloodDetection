@@ -162,7 +162,7 @@ def create_SLIC_graphs(image_folder,  flood_label, save_dir, n_segments=1000):
 
 
 def create_SAG_graphs(image_folder, flood_label, save_dir):
-    sam = sam_model_registry["default"](checkpoint="./graph_creation/sam_vit_h_4b8939.pth")
+    sam = sam_model_registry["default"](checkpoint="./checkpoints/sam_vit_h_4b8939.pth")
     if torch.cuda.is_available():
         sam = sam.cuda()
     mask_generator = SamAutomaticMaskGenerator(sam)
@@ -178,7 +178,8 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         plt.imshow(image)
         show_anns(masks)
         plt.axis('off')
-        plt.show()
+        plt.savefig(os.path.join(save_dir, "{}_segments.png".format(i)))
+        plt.close()
 
 
 def create_graphs(args):
