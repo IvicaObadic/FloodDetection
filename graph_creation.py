@@ -162,6 +162,10 @@ def create_SLIC_graphs(image_folder,  flood_label, save_dir, n_segments=1000):
 
 
 def create_SAG_graphs(image_folder, flood_label, save_dir):
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
     sam = sam_model_registry["default"](checkpoint="./checkpoints/sam_vit_h_4b8939.pth")
     if torch.cuda.is_available():
         sam = sam.cuda()
