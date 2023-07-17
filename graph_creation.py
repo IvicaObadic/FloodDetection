@@ -20,9 +20,6 @@ from util import show_anns
 import networkx as nx
 
 from segment_anything import SamAutomaticMaskGenerator, sam_model_registry
-from segment_anything.utils import amg
-
-
 
 #ROOT_DIR = "C:/Users/datasets/FloodNet/"
 class_names = ["Non-Flooded", "Flooded"]
@@ -173,11 +170,11 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
     mask_generator = SamAutomaticMaskGenerator(sam)
 
     for i, img_id in enumerate(os.listdir(image_folder)):
-        # if i % 100 == 0:
         print(i, img_id)
 
         image_path = os.path.join(image_folder, img_id)
         image = cv.imread(image_path)
+        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         masks = mask_generator.generate(image)
         plt.figure(figsize=(20, 20))
         plt.imshow(image)
