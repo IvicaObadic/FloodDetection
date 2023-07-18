@@ -182,11 +182,11 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
                 if isinstance(obj, np.ndarray):
                     return obj.tolist()
                 return json.JSONEncoder.default(self, obj)
-        # print(masks)
 
         masks_json_file = os.path.join(save_dir, img_id.split(".")[0] + ".json")
-        json_dump = json.dumps(masks, cls=NumpyEncoder)
-        print(json_dump)
+        segmentation_masks = json.dumps(masks, cls=NumpyEncoder)
+        with open(masks_json_file, "w") as outfile:
+            outfile.write(segmentation_masks)
 
         plt.figure(figsize=(20, 20))
         plt.imshow(image)
