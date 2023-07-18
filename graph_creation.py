@@ -3,7 +3,7 @@ import os
 import cv2 as cv
 import matplotlib.pyplot as plt
 import json
-
+import numpy as np
 from sklearn.neighbors import kneighbors_graph
 
 from skimage.segmentation import mark_boundaries
@@ -176,10 +176,17 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         image = cv.imread(image_path)
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         masks = mask_generator.generate(image)
+
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                return json.JSONEncoder.default(self, obj)
         # print(masks)
+
         masks_json_file = os.path.join(save_dir, img_id.split(".")[0] + ".json")
-        with open(masks_json_file, "w") as f:
-            json.dump(masks, f)
+        json_dump = json.dumps(masks, cls=NumpyEncoder)
+        print(json_dump)
 
         plt.figure(figsize=(20, 20))
         plt.imshow(image)
