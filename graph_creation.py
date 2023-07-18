@@ -187,6 +187,7 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         segmentation_masks = json.dumps(masks, cls=NumpyEncoder)
         with open(masks_json_file, "w") as outfile:
             outfile.write(segmentation_masks)
+        del segmentation_masks
 
         plt.figure(figsize=(20, 20))
         plt.imshow(image)
