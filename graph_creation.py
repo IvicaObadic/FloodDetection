@@ -167,7 +167,7 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
     sam = sam_model_registry["default"](checkpoint="./checkpoints/sam_vit_h_4b8939.pth")
     if torch.cuda.is_available():
         sam = sam.cuda()
-    mask_generator = SamAutomaticMaskGenerator(sam)
+    mask_generator = SamAutomaticMaskGenerator(sam, points_per_batch=32)
 
     for i, img_id in enumerate(os.listdir(image_folder)):
         print(i, img_id)
@@ -176,10 +176,10 @@ def create_SAG_graphs(image_folder, flood_label, save_dir):
         image = cv.imread(image_path)
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         masks = mask_generator.generate(image)
-        #print(masks)
+        print(masks)
         masks_json_file = os.path.join(save_dir, img_id.split(".")[0] + ".json")
-        # with open(masks_json_file, "w") as f:
-        #     json.dump(masks, f)
+        with open(masks_json_file, "w") as f:
+            json.dump(masks, f)
 
         plt.figure(figsize=(20, 20))
         plt.imshow(image)
