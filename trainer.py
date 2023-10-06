@@ -45,8 +45,8 @@ class ModelTrainer():
         batch_losses = []
         for data in self.train_loader:
             self.optimizer.zero_grad()  # Clear gradients.
-            output = self.batch_predict(self.model, data)
-            loss = self.loss_fn(output, data.y)  # Compute the loss.
+            predictions = self.batch_predict(self.model, data)
+            loss = self.loss_fn(predictions, data.y)  # Compute the loss.
             loss.backward()  # Derive gradients.
             #print(self.model.conv_message_passing.lin.weight.grad)
             self.optimizer.step()  # Update parameters based on gradients.
@@ -58,11 +58,13 @@ class ModelTrainer():
 
     def test(self, epoch, model):
         model.eval()
+        ids = []
         gt = []
         predicted = []
         for data in self.test_loader:
-            output = self.batch_predict(model, data)
-            pred = output.argmax(dim=1)
+            predictions = self.batch_predict(model, data)
+            pred = predictions.argmax(dim=1)
+            ids.extend(data.id)
             gt.extend(data.y.detach().cpu())
             predicted.extend(pred.detach().cpu())
 
@@ -74,7 +76,7 @@ class ModelTrainer():
             if test_f1_score >= max(self.test_f1_score):
                 self.best_model = copy.deepcopy(model)
 
-        return gt, predicted
+        return ids, gt, predicted
 
 
     def fit(self):
@@ -83,20 +85,26 @@ class ModelTrainer():
             self.test(epoch, self.model)
 
         print("Evaluating the best model:")
-        gt, predicted = self.test(self.epochs, self.best_model)
+        ids, gt, predicted = self.test(self.epochs, self.best_model)
         print("F1 score: {}".format(f1_score(gt, predicted)))
-
-        conf_matr = confusion_matrix(gt, predicted)
-        self.save_results(conf_matr)
+        self.save_results(ids, gt, predicted)
 
 
-    def save_results(self, conf_matrix):
+    def save_results(self, ids, gt, predicted):
         training_stats = {"Epoch": [i for i in range(1, self.epochs+1)],
                           "train_loss": self.epoch_loss,
                           "test_f1_score": self.test_f1_score}
         training_stats = pd.DataFrame(training_stats)
         training_stats.to_csv(os.path.join(self.model_output_dir, "training_stats.csv"))
-        pd.DataFrame(conf_matrix).to_csv(os.path.join(self.model_output_dir, "conf_matr.csv"))
+
+        gt_vs_predicted = pd.DataFrame({
+            "id": ids,
+            "gt": gt,
+            "predicted": predicted})
+        gt_vs_predicted.to_csv(os.path.join(self.model_output_dir, "gt_vs_predicted.csv"))
+
+        conf_matr = confusion_matrix(gt, predicted)
+        pd.DataFrame(conf_matr).to_csv(os.path.join(self.model_output_dir, "conf_matr.csv"))
         torch.save({'epoch': self.epochs,
                     'model_state_dict': self.model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),

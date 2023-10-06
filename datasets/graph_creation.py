@@ -46,7 +46,7 @@ def visualize_sift_descriptors(gray_image, image, img_id, kp, save_dir):
     img_with_keypoints_root_dir = os.path.join(save_dir, "keypoints_viz")
     if not os.path.exists(img_with_keypoints_root_dir):
         os.makedirs(img_with_keypoints_root_dir)
-    cv.imwrite(os.path.join(img_with_keypoints_root_dir, img_id), img)
+    cv.imwrite(os.path.join(img_with_keypoints_root_dir, "{}.png".format(img_id)), img)
 
 
 def visualize_SLIC_superpixels(image, img_id, slic_graph, slic_images_and_graphs_dir):
@@ -64,52 +64,55 @@ def visualize_SLIC_superpixels(image, img_id, slic_graph, slic_images_and_graphs
     plt.savefig(os.path.join(slic_images_and_graphs_dir, "graph_{}".format(img_id)))
     plt.close()
 
+def create_sift_graph(sift_descriptor, save_directory, image, image_id, label, visualize_descriptor=True):
 
-def create_and_save_SIFT_graphs(image_folder,  flood_label, save_dir, num_keypoints=10000):
-    print("Creating SIFT keypoint extraction graphs")
-
-    save_dir = save_dir + "_{}_segments".format(num_keypoints)
-
-    positions_similarity_save_dir = os.path.join(save_dir, "position_knn")
+    positions_similarity_save_dir = os.path.join(save_directory, "position_knn")
     if not os.path.exists(positions_similarity_save_dir):
         os.makedirs(positions_similarity_save_dir)
 
-    embeddings_similarity_save_dir = os.path.join(save_dir, "embeddings_knn")
+    embeddings_similarity_save_dir = os.path.join(save_directory, "embeddings_knn")
     if not os.path.exists(embeddings_similarity_save_dir):
         os.makedirs(embeddings_similarity_save_dir)
 
-    sift = cv.SIFT_create(num_keypoints)
+
+    gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    kp, des = sift_descriptor.detectAndCompute(gray_image, None)
+    if visualize_descriptor:
+        visualize_sift_descriptors(gray_image, image, image_id, kp, save_directory)
+
+    # create KNN graph based on keypoint locations
+    kp_positions = cv.KeyPoint_convert(kp)
+    graph_data_positions_similarity = Data(torch.from_numpy(des),
+                                           pos=torch.from_numpy(kp_positions),
+                                           y=label,
+                                           id=image_id)
+    graph_data_positions_similarity = knn_graph_transform(graph_data_positions_similarity)
+    torch.save(graph_data_positions_similarity,
+               os.path.join(positions_similarity_save_dir, f'graph_{image_id}.pt'))
+
+    A = kneighbors_graph(des, 5, mode='connectivity')
+    edge_index = from_scipy_sparse_matrix(A)[0]
+    graph_data_embeddings_similarity = Data(
+        torch.from_numpy(des),
+        pos=torch.from_numpy(kp_positions),
+        edge_index=edge_index,
+        y=label,
+        id=image_id)
+    torch.save(graph_data_embeddings_similarity,
+               os.path.join(embeddings_similarity_save_dir, f'graph_{image_id}.pt'))
+
+def create_and_save_SIFT_graphs(image_folder,  flood_label, save_dir, num_keypoints=10000):
+    print("Graph creation based on SIFT keypoints")
+    save_dir = save_dir + "_{}_segments".format(num_keypoints)
+
+    sift_descriptor = cv.SIFT_create(num_keypoints)
     images = os.listdir(image_folder)
     for i, img_id in enumerate(images):
         if i%100 == 0:
             print("Creating {}-th graph for image {}".format(i, img_id))
-
         image_path = os.path.join(image_folder, img_id)
         image = cv.imread(image_path)
-
-        gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        kp, des = sift.detectAndCompute(gray_image, None)
-        visualize_sift_descriptors(gray_image, image, img_id, kp, save_dir)
-
-        #create KNN graph based on keypoint locations
-        kp_positions = cv.KeyPoint_convert(kp)
-        graph_data_positions_similarity = Data(torch.from_numpy(des),
-                                               pos=torch.from_numpy(kp_positions),
-                                               id=img_id,
-                                               y=flood_label)
-        graph_data_positions_similarity = knn_graph_transform(graph_data_positions_similarity)
-        torch.save(graph_data_positions_similarity,
-                   os.path.join(positions_similarity_save_dir, f'graph_{img_id.split(".")[0]}.pt'))
-
-        A = kneighbors_graph(des, 5, mode='connectivity')
-        edge_index = from_scipy_sparse_matrix(A)[0]
-        graph_data_embeddings_similarity = Data(
-            torch.from_numpy(des),
-            pos=torch.from_numpy(kp_positions),
-            edge_index=edge_index, y=flood_label,
-            id=img_id)
-        torch.save(graph_data_embeddings_similarity, os.path.join(embeddings_similarity_save_dir, f'graph_{img_id.split(".")[0]}.pt'))
-
+        create_sift_graph(sift_descriptor, save_dir, image, img_id, flood_label)
 
 
 def create_SLIC_graphs(image_folder,  flood_label, save_dir, n_segments=1000):
