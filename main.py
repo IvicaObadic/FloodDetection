@@ -82,7 +82,7 @@ def train_and_evaluate_model(dataset_dir,
 
 if __name__ == '__main__':
     dataset = "Liveability"
-    model_base_output_dir = "home/graph_image_understanding/results/{}/".format(dataset)
+    model_base_output_dir = "/home/graph_image_understanding/results/{}/".format(dataset)
     encoding_method = "SIFT"
     graph_type = "embeddings_knn"
     num_segments = 500
