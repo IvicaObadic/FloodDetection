@@ -53,7 +53,7 @@ def preprocess_graph(graph, normalize):
     return graph
 
 
-def load_dataset(root_dir, dataset_split_filename, encoding_method, graph_type, normalize=True, num_segments=None):
+def load_flood_net(root_dir, dataset_split_filename, encoding_method, graph_type, normalize=True, num_segments=None):
     graphs = []
     class_frequency = [0, 0]
     with open(os.path.join(root_dir, dataset_split_filename), "r") as dataset_split_filename:
@@ -78,6 +78,26 @@ def load_dataset(root_dir, dataset_split_filename, encoding_method, graph_type, 
                             continue
 
     return graphs, torch.tensor(class_frequency, dtype=torch.float32)
+
+def load_liveability_dataset(root_dir, split, encoding_method, graph_type, normalize=True, num_segments=500):
+    graphs = []
+    graph_dataset_root_dir = os.path.join(root_dir,
+                                          "graph_representation",
+                                          split,
+                                          "{}_{}_segments".format(encoding_method, num_segments),
+                                          graph_type)
+    for i, graph_id in enumerate(os.listdir(graph_dataset_root_dir)):
+        if i > 7000:
+            break
+        graph_path = os.path.join(graph_dataset_root_dir, graph_id)
+        if graph_path.endswith(".pt"):
+            graph = torch.load(graph_path)
+            graph = preprocess_graph(graph, normalize)
+            graphs.append(graph)
+            continue
+
+    print("Dataset partition: {}, size = {}".format(split, len(graphs)))
+    return graphs
 
 
 if __name__ == '__main__':

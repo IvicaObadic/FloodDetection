@@ -29,14 +29,14 @@ def load_aerial_img(region, image_id):
     patch_path = os.path.join(dataset_root_dir, region, "{}.tiff".format(image_id))
     if os.path.isfile(patch_path):
         patch = np.array(gdal.Open(patch_path).ReadAsArray()).transpose([1, 2, 0])
-        patch = Image.fromarray(patch)
-
+        #patch = Image.fromarray(patch)
         patch = cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
         return patch
     return None
 
 if __name__ == '__main__':
-    dataset_root_dir = "/home/datasets/Liveability/"
+    #dataset_root_dir = "/home/datasets/Liveability/"
+    dataset_root_dir = "C:/Users/datasets/Liveability/"
     dataset_info_file = os.path.join(dataset_root_dir, "grid_geosplit_not_rescaled.geojson")
 
     data_container = LBMDataContainer(dataset_info_file)
@@ -47,15 +47,16 @@ if __name__ == '__main__':
 
         region = row["region_name"]
         image_id = row["gridcode"]
-        liveability_score = row["rlbrmtr"]
+        liveability_score = float(row["rlbrmtr"])
         split = row["split"]
-        image = load_aerial_img(region, image_id, split)
-        if image is not None:
-            save_dir = os.path.join(dataset_root_dir, "graph_representation",split, "SIFT_{}_segments".format(num_keypoints))
-            visualize_descriptor = (index % 1000) == 0
-            create_sift_graph(sift_descriptor, save_dir, image, image_id, liveability_score, visualize_descriptor)
-        else:
-            print("No image found for region={} and image_id={}".format(region, image_id))
+        if split == "test":
+            image = load_aerial_img(region, image_id)
+            if image is not None:
+                save_dir = os.path.join(dataset_root_dir, "graph_representation",split, "SIFT_{}_segments".format(num_keypoints))
+                visualize_descriptor = (index % 1000) == 0
+                create_sift_graph(sift_descriptor, save_dir, image, image_id, liveability_score, visualize_descriptor)
+            else:
+                print("No image found for region={} and image_id={}".format(region, image_id))
 
 
 

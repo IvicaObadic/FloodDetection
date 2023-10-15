@@ -5,17 +5,19 @@ import torch
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
-from graph_impl import *
-from trainer import ModelTrainer
+from models.gnn import *
 from torch_geometric.nn import global_max_pool, global_mean_pool, SAGPooling
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 import dataset_preprocessor
+from graph_inference import *
+from dataset_settings import *
 
-ROOT_DIR = "C:/Users/datasets/FloodNet/"
 
 
 
-def train_and_evaluate_model(dataset,
+
+def train_and_evaluate_model(dataset_dir,
                              model_base_output_dir,
                              encoding_method,
                              graph_type,
@@ -30,12 +32,11 @@ def train_and_evaluate_model(dataset,
 
     print("GNN training based on {}".format(training_params))
 
-    training_set, class_frequency = dataset_preprocessor.load_dataset(ROOT_DIR, "train.txt", encoding_method, graph_type, normalize=normalize, num_segments=num_segments)
-    test_set, _ = dataset_preprocessor.load_dataset(ROOT_DIR, "test.txt", encoding_method, graph_type, normalize=normalize, num_segments=num_segments)
-
-    print("Train size {}".format(len(training_set)), "Test size {}".format(len(test_set)))
+    training_set = dataset_preprocessor.load_liveability_dataset(dataset_dir, "train", "SIFT", graph_type)
+    val_set = dataset_preprocessor.load_liveability_dataset(dataset_dir, "val", "SIFT", graph_type)
+    test_set = dataset_preprocessor.load_liveability_dataset(dataset_dir, "test", "SIFT", graph_type)
     input_features_dim = training_set[0].x.shape[1]
-
+    out_channels = get_out_channels(dataset)
     hidden_channels = 256
     if pooling_layer == "mean":
         pooling_fn = global_mean_pool
@@ -48,35 +49,50 @@ def train_and_evaluate_model(dataset,
                          in_channels=input_features_dim,
                          hidden_channels=hidden_channels,
                          num_heads=1,
-                         out_channels=2,
+                         out_channels=out_channels,
                          pooling_layer=pooling_fn)
     else:
-        model = GCNGraph(num_layers=1, in_channels=input_features_dim, hidden_channels=hidden_channels, out_channels=2, pooling_layer=pooling_fn)
-    if torch.cuda.is_available():
-        model = model.cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.001)
-    weights = class_frequency / class_frequency.sum()
-    if torch.cuda.is_available():
-        weights = weights.cuda()
-    criterion = torch.nn.CrossEntropyLoss(weight=1.0/weights)
-
-    train_loader = DataLoader(training_set, batch_size=16, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=16, shuffle=True)
+        model = GCNGraph(num_layers=3,
+                         in_channels=input_features_dim,
+                         hidden_channels=hidden_channels,
+                         out_channels=out_channels,
+                         pooling_layer=pooling_fn)
 
     model_output_dir = os.path.join(model_base_output_dir, training_params, model.to_str())
-    model_trainer = ModelTrainer(model, model_output_dir, train_loader, test_loader, optimizer, criterion, 100)
-    model_trainer.fit()
+    batch_size = 64
+    graph_image_model = GraphImageUnderstanding(model, get_loss_function(dataset), batch_size)
+
+    train_loader = DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4)
+
+    # saves top-K checkpoints based on "val_loss" metric
+    checkpoint_callback = ModelCheckpoint(
+        save_top_k=5,
+        monitor="val_loss",
+        mode="min",
+        dirpath=model_output_dir,
+        filename="sample-mnist-{epoch:02d}-{val_loss:.2f}",
+    )
+
+    trainer = pl.Trainer(max_epochs=300, check_val_every_n_epoch=10, callbacks=[checkpoint_callback], default_root_dir=model_output_dir, log_every_n_steps=20)
+    trainer.fit(model=graph_image_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    trainer.test(graph_image_model,dataloaders=test_loader)
 
 
 if __name__ == '__main__':
-    model_base_output_dir = "C:/Users/results/gnn_flood_detection/"
+    dataset = "Liveability"
+    model_base_output_dir = "home/graph_image_understanding/results/{}/".format(dataset)
     encoding_method = "SIFT"
-    graph_type = "position_knn"
+    graph_type = "embeddings_knn"
     num_segments = 500
-    train_and_evaluate_model(model_base_output_dir,
+    dataset_dir = "/home/datasets/{}/".format(dataset)
+
+    train_and_evaluate_model(dataset_dir,
+                             model_base_output_dir,
                              encoding_method,
                              graph_type,
                              "GAT",
-                             "sag",
+                             "mean",
                              normalize=True,
                              num_segments=num_segments)
