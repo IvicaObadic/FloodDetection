@@ -80,6 +80,8 @@ def load_flood_net(root_dir, dataset_split_filename, encoding_method, graph_type
     return graphs, torch.tensor(class_frequency, dtype=torch.float32)
 
 def load_liveability_dataset(root_dir, split, encoding_method, graph_type, normalize=True, num_segments=500):
+
+    print("Reading the {} split".format(split))
     graphs = []
     graph_dataset_root_dir = os.path.join(root_dir,
                                           "graph_representation",
@@ -87,8 +89,8 @@ def load_liveability_dataset(root_dir, split, encoding_method, graph_type, norma
                                           "{}_{}_segments".format(encoding_method, num_segments),
                                           graph_type)
     for i, graph_id in enumerate(os.listdir(graph_dataset_root_dir)):
-        if i > 7000:
-            break
+        # if i > 7000:
+        #     break
         graph_path = os.path.join(graph_dataset_root_dir, graph_id)
         if graph_path.endswith(".pt"):
             graph = torch.load(graph_path)
