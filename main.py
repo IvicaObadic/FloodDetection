@@ -52,7 +52,7 @@ def train_and_evaluate_model(dataset_dir,
                          out_channels=out_channels,
                          pooling_layer=pooling_fn)
     else:
-        model = GCNGraph(num_layers=3,
+        model = GCNGraph(num_layers=5,
                          in_channels=input_features_dim,
                          hidden_channels=hidden_channels,
                          out_channels=out_channels,
